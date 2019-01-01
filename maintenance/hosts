@@ -1,0 +1,5 @@
+[openwisp2]
+prod.openwisp
+
+[openwisp2:vars]
+ansible_ssh_common_args='-o StrictHostKeyChecking=no'

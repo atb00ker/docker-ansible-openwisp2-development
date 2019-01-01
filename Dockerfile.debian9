@@ -1,0 +1,8 @@
+FROM atb00ker/sshable:debian9
+LABEL maintainer="Ajay Tripathi <ajay39in@gmail.com>" \
+    description="Deploy OpenWISP for development"
+RUN apt-get update \
+    && apt-get install -y systemd \
+    && apt-get clean
+EXPOSE 80 443 22
+CMD ["/lib/systemd/systemd"]

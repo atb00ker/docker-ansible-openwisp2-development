@@ -1,0 +1,51 @@
+dist: xenial
+services: docker
+language: python
+
+env:
+  global:
+    python_path: /usr/bin/python3
+  matrix:
+    # ubuntu
+  - distro: ubuntu18
+  - distro: ubuntu16
+    # debian
+  - distro: debian10
+  - distro: debian9
+  - distro: debian8
+    python_path: /usr/bin/python
+    # centos
+  - distro: centos7
+    python_path: /usr/bin/python
+    # fedora
+  - distro: fedora28
+  - distro: fedora27
+  - distro: fedora26
+
+before_install:
+  - sudo apt update
+  - sudo apt install -y software-properties-common
+
+install:
+  - sudo apt-add-repository --yes --update ppa:ansible/ansible
+  - sudo apt install -y sshpass ansible curl
+
+script:
+  - docker network create --driver bridge --subnet 192.168.56.33/27 --gateway 192.168.56.33 docker-bridge
+  - mv $TRAVIS_BUILD_DIR/Dockerfile.$distro $TRAVIS_BUILD_DIR/Dockerfile
+  - docker build --tag atb00ker/ansible-openwisp2-development:$distro $TRAVIS_BUILD_DIR
+  - docker run -dit --privileged --name "prod.openwisp" --net docker-bridge --ip=192.168.56.35 atb00ker/ansible-openwisp2-development:$distro
+  - sudo sed -i "2i192.168.56.35   prod.openwisp" /etc/hosts
+  - ansible-galaxy install openwisp.openwisp2
+  - ansible-playbook -i $TRAVIS_BUILD_DIR/maintenance/hosts $TRAVIS_BUILD_DIR/maintenance/playbook.yml -u root -e "ansible_python_interpreter=$python_path" --extra-vars "ansible_password=root"
+  - curl --insecure -s --head https://prod.openwisp/admin/login/?next=/admin/ | grep "200 OK" && exit $?
+
+jobs:
+  include:    
+    - stage: deploy
+      language: bash
+      script:
+        - docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
+        - bash $TRAVIS_BUILD_DIR/maintenance/docker-travis-build.sh
+        - docker image ls
+        - bash $TRAVIS_BUILD_DIR/maintenance/docker-travis-push.sh

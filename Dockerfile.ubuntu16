@@ -1,0 +1,5 @@
+FROM atb00ker/sshable:ubuntu16
+LABEL maintainer="Ajay Tripathi <ajay39in@gmail.com>" \
+    description="Deploy OpenWISP for development"
+EXPOSE 80 443 22
+CMD ["/lib/systemd/systemd"]
